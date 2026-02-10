@@ -1,0 +1,46 @@
+# -------------------------------
+# Threads
+# -------------------------------
+loadrt threads name1=servo-thread period1=1000000
+
+# -------------------------------
+# Load components
+# -------------------------------
+loadrt lcec
+loadrt hal_cia402 count=1
+
+# -------------------------------
+# Add functions
+# -------------------------------
+addf lcec.read-all servo-thread
+addf cia402.0 servo-thread
+addf lcec.write-all servo-thread
+
+# -------------------------------
+# Load EtherCAT configuration
+# -------------------------------
+setp lcec.conf ethercat-conf.xml
+setp lcec.enable 1
+
+# -------------------------------
+# CiA402 configuration
+# -------------------------------
+setp cia402.0.auto-enable 1
+setp cia402.0.opmode 8        # CSP (Position mode)
+setp cia402.0.scale 1         # counts per unit (adjust later)
+
+# -------------------------------
+# EtherCAT <-> CiA402 wiring
+# -------------------------------
+net controlword     cia402.0.controlword    => lcec.0.0.controlword
+net statusword      cia402.0.statusword     <= lcec.0.0.statusword
+
+net target-position cia402.0.position-cmd   => lcec.0.0.target-position
+net actual-position cia402.0.position-fb    <= lcec.0.0.actual-position
+
+# -------------------------------
+# LinuxCNC motion wiring
+# -------------------------------
+net x-enable    motion.enable              => cia402.0.enable
+net x-pos-cmd   joint.0.motor-pos-cmd      => cia402.0.position-cmd
+net x-pos-fb    joint.0.motor-pos-fb       <= cia402.0.position-fb
